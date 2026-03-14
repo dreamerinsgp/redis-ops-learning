@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	cachepenetration "redis-ops-learning/problems/cache_penetration"
 	"redis-ops-learning/problems/clients"
 	"redis-ops-learning/problems/memory"
 	"redis-ops-learning/problems/replication"
@@ -39,6 +40,8 @@ func main() {
 		replication.Run(action)
 	case "05-stats":
 		stats.Run(action)
+	case "06-cache-penetration":
+		cachepenetration.Run(action)
 	default:
 		fmt.Printf("Unknown problem: %s\n", problem)
 		printUsage()
@@ -50,11 +53,12 @@ func printUsage() {
 	fmt.Println(`Usage: go run ./cmd run <problem> [action]
 
 Problems and actions:
-  01-memory       info | bigkeys
-  02-clients      info
-  03-slowlog      info | slowlog
-  04-replication  info
-  05-stats        info | stats
+  01-memory            info | bigkeys
+  02-clients           info
+  03-slowlog           info | slowlog
+  04-replication       info
+  05-stats             info | stats
+  06-cache-penetration info | simulate | bloom
 
 Set env:
   REDIS_ADDR=host:port     (default 127.0.0.1:6379)
