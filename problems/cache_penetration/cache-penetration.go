@@ -39,20 +39,25 @@ func showInfo(client rdb.UniversalClient, ctx context.Context) {
 	fmt.Println("【问题】每次查询都穿透到数据库，数据库压力大")
 	fmt.Println()
 
-	// Demo keys
-	productExists := "product:1001"
-	productNotExists := "product:9999"
+	// 准备真实测试数据：存在 vs 不存在的 key 对比
+	demoPrefix := "demo:cp:"
+	productExists := demoPrefix + "product:1001"
+	productNotExists := demoPrefix + "product:9999"
+
+	log.Println("[准备数据] 写入存在的商品 product:1001，product:9999 不写入（模拟不存在）")
+	client.Set(ctx, productExists, `{"id":1001,"name":"商品A","price":99}`, 0)
+	client.Del(ctx, productNotExists) // 确保不存在
 
 	// Check if keys exist
 	exists, _ := client.Exists(ctx, productExists).Result()
 	notExists, _ := client.Exists(ctx, productNotExists).Result()
 
-	fmt.Printf("product:1001 (存在) EXISTS: %d\n", exists)
+	fmt.Printf("product:1001 (存在)   EXISTS: %d\n", exists)
 	fmt.Printf("product:9999 (不存在) EXISTS: %d\n", notExists)
 	fmt.Println()
 
 	// Simulate penetration: query non-existent key
-	log.Println("[模拟穿透] GET product:9999 (不存在的 key)")
+	log.Println("[模拟穿透] GET product:9999 (不存在的 key，每次都会穿透)")
 	val, err := client.Get(ctx, productNotExists).Result()
 	if err == rdb.Nil {
 		fmt.Printf("→ 返回 nil，缓存未命中 (Cache Miss)\n")
@@ -73,6 +78,11 @@ func showInfo(client rdb.UniversalClient, ctx context.Context) {
 
 	hitRate := getKeyspaceHitRate(info)
 	fmt.Printf("缓存命中率: %.2f%%\n", hitRate)
+
+	// 清理演示数据
+	client.Del(ctx, productExists)
+	fmt.Println()
+	fmt.Println("[清理] 演示 key 已删除")
 }
 
 // simulate demonstrates the penetration pattern
@@ -100,14 +110,14 @@ func simulate(client rdb.UniversalClient, ctx context.Context) {
 	fmt.Println("→ 设置空值，TTL=30秒")
 	fmt.Println()
 
-	// Step 3: Query again (cache hit with null)
+	// Step 3: Query again (cache hit with null value)
 	log.Printf("[Step 3] GET %s (已有空值缓存)", testKey)
 	val2, err := client.Get(ctx, testKey).Result()
 	if err == rdb.Nil {
-		fmt.Println("→ 仍然返回 nil，但命中了空值缓存！")
-		fmt.Println("→ 不需要查询数据库， penetration 防止成功！")
+		fmt.Println("→ 缓存过期或不存在")
 	} else {
-		fmt.Printf("→ 值: %s\n", val2)
+		fmt.Printf("→ 命中空值缓存，值: %s\n", val2)
+		fmt.Println("→ 无需查数据库，穿透已防止！")
 	}
 
 	// Show keys
@@ -165,10 +175,6 @@ func showBloomFilter(client rdb.UniversalClient, ctx context.Context) {
 func getStatsLines(info string, keys []string) []string {
 	var result []string
 	lines := getInfoLines(info)
-	keySet := make(map[string]bool)
-	for _, k := range keys {
-		keySet[k] = true
-	}
 	for _, line := range lines {
 		for _, k := range keys {
 			if len(line) > len(k) && line[:len(k)+1] == k+":" {
