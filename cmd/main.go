@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	bigkey "redis-ops-learning/problems/bigkey"
 	cachepenetration "redis-ops-learning/problems/cache_penetration"
 	"redis-ops-learning/problems/clients"
 	"redis-ops-learning/problems/memory"
@@ -42,6 +43,8 @@ func main() {
 		stats.Run(action)
 	case "06-cache-penetration":
 		cachepenetration.Run(action)
+	case "07-bigkey":
+		bigkey.Run(action)
 	default:
 		fmt.Printf("Unknown problem: %s\n", problem)
 		printUsage()
@@ -59,6 +62,7 @@ Problems and actions:
   04-replication       info
   05-stats             info | stats
   06-cache-penetration info | simulate | bloom
+  07-bigkey           info | scan | demo | split
 
 Set env:
   REDIS_ADDR=host:port     (default 127.0.0.1:6379)
