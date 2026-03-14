@@ -59,11 +59,11 @@ func showBigKeyInfo(ctx context.Context, client rdb.UniversalClient) {
 
 // scanBigKeys scans for big keys in the database
 func scanBigKeys(ctx context.Context, client rdb.UniversalClient) {
-	log.Println("[大key扫描] SCAN 扫描 + MEMORY USAGE 检测（采样 100 个 key）")
+	log.Println("[大key扫描] SCAN 扫描 + MEMORY USAGE 检测（采样 500 个 key）")
 
 	var cursor uint64
 	sampled := 0
-	maxSamples := 100
+	maxSamples := 500
 	type keySize struct {
 		key     string
 		size    int64
@@ -112,6 +112,7 @@ func scanBigKeys(ctx context.Context, client rdb.UniversalClient) {
 
 	if len(largeKeys) == 0 {
 		fmt.Println("(未发现 > 10KB 的大 key)")
+		fmt.Println("提示：运行 demo 动作可创建演示用大 key，再运行 scan 查看")
 		return
 	}
 
@@ -203,12 +204,8 @@ func demoBigKeyProblem(ctx context.Context, client rdb.UniversalClient) {
 		}
 	}
 
-	// Clean up
-	fmt.Println("\n5. 清理演示数据...")
-	for _, k := range keysToClean {
-		client.Del(ctx, k)
-	}
-	fmt.Println("   清理完成")
+	fmt.Println("\n5. 演示数据已保留（供 scan 动作检测）")
+	fmt.Println("   提示：再次运行 demo 将自动清理并重建；或手动 DEL demo:big_*")
 }
 
 // splitBigHash demonstrates how to split a big hash
